@@ -26,6 +26,13 @@ export interface FormField {
   rows?: number;
   accept?: string;
   multiple?: boolean;
+  stepIndex?: number;
+}
+
+export interface FormStep {
+  title: string;
+  description?: string;
+  fields: FormField[];
 }
 
 export type FieldType =
@@ -113,6 +120,7 @@ export interface JSONSchemaProperty {
   'x-multiple'?: boolean;
   'x-disabled'?: boolean;
   'x-hidden'?: boolean;
+  'x-step'?: number;
   // Nested
   items?: JSONSchemaProperty;
   properties?: Record<string, JSONSchemaProperty>;
@@ -347,11 +355,37 @@ export function parseSchema(schema: JSONSchema): FormField[] {
     if (property['x-rows']) field.rows = property['x-rows'];
     if (property['x-accept']) field.accept = property['x-accept'];
     if (property['x-multiple']) field.multiple = property['x-multiple'];
+    if (property['x-step'] !== undefined) field.stepIndex = property['x-step'];
 
     fields.push(field);
   }
 
   return fields;
+}
+
+export function groupFieldsByStep(fields: FormField[]): FormStep[] {
+  const hasSteps = fields.some(f => f.stepIndex !== undefined);
+  
+  if (!hasSteps) {
+    return [{ title: 'Form', fields }];
+  }
+
+  const stepMap = new Map<number, FormField[]>();
+  
+  fields.forEach(field => {
+    const step = field.stepIndex ?? 0;
+    if (!stepMap.has(step)) {
+      stepMap.set(step, []);
+    }
+    stepMap.get(step)!.push(field);
+  });
+
+  const sortedSteps = Array.from(stepMap.entries()).sort((a, b) => a[0] - b[0]);
+  
+  return sortedSteps.map(([index, stepFields], i) => ({
+    title: `Step ${i + 1}`,
+    fields: stepFields,
+  }));
 }
 
 // Generate Zod schema from form fields
@@ -842,6 +876,64 @@ export const sampleSchemas: Record<string, JSONSchema> = {
         type: 'boolean',
         title: 'Make profile public',
         default: false,
+      },
+    },
+  },
+  multiStep: {
+    $schema: 'http://json-schema.org/draft-07/schema#',
+    title: 'Multi-Step Registration',
+    type: 'object',
+    required: ['firstName', 'lastName', 'email', 'password', 'plan'],
+    properties: {
+      firstName: {
+        type: 'string',
+        title: 'First Name',
+        'x-placeholder': 'John',
+        'x-step': 0,
+      },
+      lastName: {
+        type: 'string',
+        title: 'Last Name',
+        'x-placeholder': 'Doe',
+        'x-step': 0,
+      },
+      email: {
+        type: 'string',
+        format: 'email',
+        title: 'Email',
+        'x-placeholder': 'john@example.com',
+        'x-step': 1,
+      },
+      password: {
+        type: 'string',
+        format: 'password',
+        title: 'Password',
+        minLength: 8,
+        'x-step': 1,
+      },
+      confirmPassword: {
+        type: 'string',
+        format: 'password',
+        title: 'Confirm Password',
+        'x-step': 1,
+      },
+      plan: {
+        type: 'string',
+        title: 'Select Plan',
+        enum: ['free', 'pro', 'enterprise'],
+        enumNames: ['Free - $0/mo', 'Pro - $19/mo', 'Enterprise - $99/mo'],
+        'x-step': 2,
+      },
+      cardNumber: {
+        type: 'string',
+        title: 'Card Number',
+        'x-placeholder': '4242 4242 4242 4242',
+        'x-step': 2,
+      },
+      acceptTerms: {
+        type: 'boolean',
+        title: 'I accept the terms and conditions',
+        'x-step': 2,
       },
     },
   },

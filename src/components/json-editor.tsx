@@ -78,6 +78,7 @@ export function JsonEditor() {
             <option value="bugReport">Bug Report</option>
             <option value="eventRSVP">Event RSVP</option>
             <option value="profile">Profile Settings</option>
+            <option value="multiStep">Multi-Step</option>
           </select>
 
           <button

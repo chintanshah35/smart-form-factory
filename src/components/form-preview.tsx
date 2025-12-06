@@ -7,12 +7,15 @@ import {
   EyeOff, 
   AlertCircle,
   Sparkles,
-  Info
+  Info,
+  ChevronLeft,
+  ChevronRight,
+  Check
 } from 'lucide-react';
 import { useFormFactoryStore } from '@/lib/store';
-import { FormField } from '@/lib/schema-parser';
+import { FormField, groupFieldsByStep } from '@/lib/schema-parser';
 import { cn } from '@/lib/utils';
-import { useState } from 'react';
+import { useState, useMemo } from 'react';
 
 interface FormFieldComponentProps {
   field: FormField;
@@ -195,7 +198,6 @@ function FormFieldComponent({ field, register, errors }: FormFieldComponentProps
     }
   };
 
-  // Checkbox has inline label
   if (field.type === 'checkbox') {
     return (
       <motion.div 
@@ -237,7 +239,6 @@ function FormFieldComponent({ field, register, errors }: FormFieldComponentProps
       
       {renderInput()}
       
-      {/* Description */}
       {field.description && (
         <p className="text-sm text-muted-foreground flex items-start gap-1.5 mt-1.5">
           <Info className="w-3.5 h-3.5 mt-0.5 flex-shrink-0" />
@@ -245,7 +246,6 @@ function FormFieldComponent({ field, register, errors }: FormFieldComponentProps
         </p>
       )}
       
-      {/* Error Message */}
       <AnimatePresence>
         {error && (
           <motion.p
@@ -266,20 +266,39 @@ function FormFieldComponent({ field, register, errors }: FormFieldComponentProps
 
 export function FormPreview() {
   const { parsedFields, formTitle } = useFormFactoryStore();
+  const [currentStep, setCurrentStep] = useState(0);
+  
+  const steps = useMemo(() => groupFieldsByStep(parsedFields), [parsedFields]);
+  const isMultiStep = steps.length > 1;
   
   const {
     register,
     handleSubmit,
     formState: { errors, isSubmitting },
     reset,
+    trigger,
   } = useForm();
 
   const onSubmit = async (data: Record<string, unknown>) => {
-    // Simulate submission
     await new Promise((resolve) => setTimeout(resolve, 1000));
     console.log('Form data:', data);
     alert('Form submitted successfully! Check console for data.');
     reset();
+    setCurrentStep(0);
+  };
+
+  const handleNext = async () => {
+    const currentFields = steps[currentStep].fields.map(f => f.name);
+    const isValid = await trigger(currentFields);
+    if (isValid && currentStep < steps.length - 1) {
+      setCurrentStep(currentStep + 1);
+    }
+  };
+
+  const handlePrev = () => {
+    if (currentStep > 0) {
+      setCurrentStep(currentStep - 1);
+    }
   };
 
   if (parsedFields.length === 0) {
@@ -313,7 +332,7 @@ export function FormPreview() {
           <h2 className="font-semibold text-sm">Live Preview</h2>
         </div>
         <span className="badge-secondary text-xs">
-          {parsedFields.length} fields
+          {isMultiStep ? `${steps.length} steps` : `${parsedFields.length} fields`}
         </span>
       </div>
 
@@ -325,58 +344,118 @@ export function FormPreview() {
           animate={{ opacity: 1, y: 0 }}
           transition={{ duration: 0.4 }}
         >
-          {/* Form Card */}
           <div className="card-hover">
-            {/* Form Title */}
             <h2 className="text-xl font-bold mb-1 gradient-text">
               {formTitle}
             </h2>
-            <p className="text-sm text-muted-foreground mb-6">
-              Fill out the form below
-            </p>
+            
+            {/* Step Progress */}
+            {isMultiStep && (
+              <div className="mb-6">
+                <div className="flex items-center justify-between mb-2">
+                  {steps.map((step, index) => (
+                    <div key={index} className="flex items-center">
+                      <div
+                        className={cn(
+                          'w-8 h-8 rounded-full flex items-center justify-center text-sm font-medium transition-all',
+                          index < currentStep
+                            ? 'bg-success text-success-foreground'
+                            : index === currentStep
+                            ? 'bg-primary text-primary-foreground'
+                            : 'bg-muted text-muted-foreground'
+                        )}
+                      >
+                        {index < currentStep ? <Check className="w-4 h-4" /> : index + 1}
+                      </div>
+                      {index < steps.length - 1 && (
+                        <div
+                          className={cn(
+                            'h-0.5 w-8 sm:w-16 mx-1',
+                            index < currentStep ? 'bg-success' : 'bg-muted'
+                          )}
+                        />
+                      )}
+                    </div>
+                  ))}
+                </div>
+                <p className="text-sm text-muted-foreground text-center">
+                  Step {currentStep + 1} of {steps.length}
+                </p>
+              </div>
+            )}
+
+            {!isMultiStep && (
+              <p className="text-sm text-muted-foreground mb-6">
+                Fill out the form below
+              </p>
+            )}
 
             {/* Form Fields */}
             <form onSubmit={handleSubmit(onSubmit)} className="space-y-5">
-              <AnimatePresence mode="popLayout">
-                {parsedFields.map((field, index) => (
-                  <motion.div
-                    key={field.id}
-                    initial={{ opacity: 0, y: 20 }}
-                    animate={{ opacity: 1, y: 0 }}
-                    exit={{ opacity: 0, y: -20 }}
-                    transition={{ delay: index * 0.05 }}
-                  >
-                    <FormFieldComponent
-                      field={field}
-                      register={register}
-                      errors={errors as Record<string, { message?: string }>}
-                    />
-                  </motion.div>
-                ))}
+              <AnimatePresence mode="wait">
+                <motion.div
+                  key={currentStep}
+                  initial={{ opacity: 0, x: 20 }}
+                  animate={{ opacity: 1, x: 0 }}
+                  exit={{ opacity: 0, x: -20 }}
+                  transition={{ duration: 0.2 }}
+                  className="space-y-5"
+                >
+                  {steps[currentStep].fields.map((field, index) => (
+                    <motion.div
+                      key={field.id}
+                      initial={{ opacity: 0, y: 20 }}
+                      animate={{ opacity: 1, y: 0 }}
+                      transition={{ delay: index * 0.05 }}
+                    >
+                      <FormFieldComponent
+                        field={field}
+                        register={register}
+                        errors={errors as Record<string, { message?: string }>}
+                      />
+                    </motion.div>
+                  ))}
+                </motion.div>
               </AnimatePresence>
 
-              {/* Submit Button */}
-              <motion.button
-                type="submit"
-                disabled={isSubmitting}
-                className="btn-primary w-full mt-6"
-                whileHover={{ scale: 1.01 }}
-                whileTap={{ scale: 0.99 }}
-              >
-                {isSubmitting ? (
-                  <span className="flex items-center justify-center gap-2">
-                    <motion.span
-                      animate={{ rotate: 360 }}
-                      transition={{ duration: 1, repeat: Infinity, ease: 'linear' }}
-                    >
-                      ⏳
-                    </motion.span>
-                    Submitting...
-                  </span>
-                ) : (
-                  'Submit Form'
+              {/* Navigation Buttons */}
+              <div className="flex gap-3 mt-6">
+                {isMultiStep && currentStep > 0 && (
+                  <motion.button
+                    type="button"
+                    onClick={handlePrev}
+                    className="btn-ghost flex-1 flex items-center justify-center gap-2"
+                    whileHover={{ scale: 1.01 }}
+                    whileTap={{ scale: 0.99 }}
+                  >
+                    <ChevronLeft className="w-4 h-4" />
+                    Back
+                  </motion.button>
                 )}
-              </motion.button>
+                
+                {isMultiStep && currentStep < steps.length - 1 ? (
+                  <motion.button
+                    type="button"
+                    onClick={handleNext}
+                    className="btn-primary flex-1 flex items-center justify-center gap-2"
+                    whileHover={{ scale: 1.01 }}
+                    whileTap={{ scale: 0.99 }}
+                  >
+                    Next
+                    <ChevronRight className="w-4 h-4" />
+                  </motion.button>
+                ) : (
+                  <motion.button
+                    type="submit"
+                    disabled={isSubmitting}
+                    className="btn-primary flex-1"
+                    whileHover={{ scale: 1.01 }}
+                    whileTap={{ scale: 0.99 }}
+                  >
+                    {isSubmitting ? 'Submitting...' : 'Submit'}
+                  </motion.button>
+                )}
+              </div>
             </form>
           </div>
         </motion.div>
@@ -384,4 +463,3 @@ export function FormPreview() {
     </motion.div>
   );
 }
-
