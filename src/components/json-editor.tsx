@@ -13,7 +13,6 @@ import {
   Loader2
 } from 'lucide-react';
 import { useFormFactoryStore } from '@/lib/store';
-import { sampleSchemas } from '@/lib/schema-parser';
 
 export function JsonEditor() {
   const { theme } = useTheme();
@@ -48,8 +47,6 @@ export function JsonEditor() {
     setIsEditorReady(true);
   }, []);
 
-  const sampleOptions = Object.keys(sampleSchemas) as (keyof typeof sampleSchemas)[];
-
   return (
     <motion.div 
       className="h-full flex flex-col"
@@ -67,16 +64,20 @@ export function JsonEditor() {
         <div className="flex items-center gap-2">
           {/* Sample Schemas Dropdown */}
           <select
-            onChange={(e) => loadSampleSchema(e.target.value as keyof typeof sampleSchemas)}
+            onChange={(e) => loadSampleSchema(e.target.value as string)}
             className="text-sm bg-muted border border-border rounded-lg px-3 py-1.5 focus:ring-2 focus:ring-primary/20 focus:border-primary outline-none transition-all"
             defaultValue=""
           >
             <option value="" disabled>Load Sample...</option>
-            {sampleOptions.map((name) => (
-              <option key={name} value={name}>
-                {name.charAt(0).toUpperCase() + name.slice(1)} Form
-              </option>
-            ))}
+            <option value="contact">Contact</option>
+            <option value="registration">Registration</option>
+            <option value="feedback">Feedback</option>
+            <option value="checkout">Checkout</option>
+            <option value="jobApplication">Job Application</option>
+            <option value="newsletter">Newsletter</option>
+            <option value="bugReport">Bug Report</option>
+            <option value="eventRSVP">Event RSVP</option>
+            <option value="profile">Profile Settings</option>
           </select>
 
           <button

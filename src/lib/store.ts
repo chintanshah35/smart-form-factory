@@ -25,7 +25,7 @@ interface FormFactoryState {
   setSelectedFramework: (framework: Framework) => void;
   setFormTitle: (title: string) => void;
   setActiveTab: (tab: 'editor' | 'preview' | 'code') => void;
-  loadSampleSchema: (name: keyof typeof sampleSchemas) => void;
+  loadSampleSchema: (name: string) => void;
   generateFormCode: () => void;
   reset: () => void;
 }
@@ -106,8 +106,8 @@ export const useFormFactoryStore = create<FormFactoryState>()(
         set({ activeTab: tab });
       },
 
-      loadSampleSchema: (name: keyof typeof sampleSchemas) => {
-        const schema = sampleSchemas[name];
+      loadSampleSchema: (name: string) => {
+        const schema = sampleSchemas[name as keyof typeof sampleSchemas];
         if (schema) {
           const jsonString = JSON.stringify(schema, null, 2);
           set({ 
