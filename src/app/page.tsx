@@ -18,18 +18,29 @@ import { JsonEditor } from '@/components/json-editor';
 import { FormPreview } from '@/components/form-preview';
 import { CodeOutput } from '@/components/code-output';
 import { useFormFactoryStore } from '@/lib/store';
-import { cn } from '@/lib/utils';
+import { cn, decodeSchema } from '@/lib/utils';
 
 type TabType = 'editor' | 'preview' | 'code';
 
 export default function Home() {
-  const { parsedFields, activeTab, setActiveTab } = useFormFactoryStore();
+  const { parsedFields, activeTab, setActiveTab, setJsonInput, parseJsonSchema } = useFormFactoryStore();
   const [isCollapsed, setIsCollapsed] = useState(false);
   const [mounted, setMounted] = useState(false);
 
   useEffect(() => {
     setMounted(true);
-  }, []);
+    
+    // Load schema from URL if present
+    const params = new URLSearchParams(window.location.search);
+    const encoded = params.get('s');
+    if (encoded) {
+      const decoded = decodeSchema(encoded);
+      if (decoded) {
+        setJsonInput(decoded);
+        setTimeout(() => parseJsonSchema(), 100);
+      }
+    }
+  }, [setJsonInput, parseJsonSchema]);
 
   const tabs: { id: TabType; label: string; icon: React.ReactNode }[] = [
     { id: 'editor', label: 'Schema', icon: <Code2 className="w-4 h-4" /> },

@@ -7,17 +7,41 @@ import {
   Moon, 
   Github, 
   Sparkles,
-  Zap
+  Zap,
+  Share2,
+  Check
 } from 'lucide-react';
 import { useEffect, useState } from 'react';
+import { useFormFactoryStore } from '@/lib/store';
+import { encodeSchema, copyToClipboard } from '@/lib/utils';
+import { toast } from '@/components/ui/toaster';
 
 export function Header() {
   const { theme, setTheme } = useTheme();
   const [mounted, setMounted] = useState(false);
+  const [copied, setCopied] = useState(false);
+  const { jsonInput, parsedFields } = useFormFactoryStore();
 
   useEffect(() => {
     setMounted(true);
   }, []);
+
+  const handleShare = async () => {
+    if (!parsedFields.length) {
+      toast({ title: 'Generate a form first', variant: 'destructive' });
+      return;
+    }
+    
+    const encoded = encodeSchema(jsonInput);
+    const url = `${window.location.origin}?s=${encoded}`;
+    
+    const success = await copyToClipboard(url);
+    if (success) {
+      setCopied(true);
+      toast({ title: 'Link copied!', description: 'Share this URL with anyone' });
+      setTimeout(() => setCopied(false), 2000);
+    }
+  };
 
   return (
     <header className="sticky top-0 z-50 w-full border-b border-border/40 bg-background/80 backdrop-blur-xl">
@@ -66,9 +90,21 @@ export function Header() {
           animate={{ opacity: 1, x: 0 }}
           transition={{ duration: 0.5, delay: 0.1 }}
         >
+          {/* Share Button */}
+          {mounted && (
+            <button
+              onClick={handleShare}
+              className="btn-ghost rounded-lg p-2.5 text-muted-foreground hover:text-foreground"
+              aria-label="Share form"
+              title="Copy shareable link"
+            >
+              {copied ? <Check className="w-5 h-5 text-success" /> : <Share2 className="w-5 h-5" />}
+            </button>
+          )}
+
           {/* GitHub Link */}
           <a
-            href="https://github.com"
+            href="https://github.com/chintanshah35/smart-form-factory"
             target="_blank"
             rel="noopener noreferrer"
             className="btn-ghost rounded-lg p-2.5 text-muted-foreground hover:text-foreground"
@@ -117,4 +153,3 @@ export function Header() {
     </header>
   );
 }
-

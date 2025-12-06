@@ -76,12 +76,29 @@ export async function copyToClipboard(text: string): Promise<boolean> {
   }
 }
 
-// Format code with basic indentation
 export function formatCode(code: string, indent: number = 2): string {
   return code
     .split('\n')
     .map(line => line.trim())
     .join('\n')
     .replace(/\n{3,}/g, '\n\n');
+}
+
+export function encodeSchema(schema: string): string {
+  try {
+    const compressed = btoa(encodeURIComponent(schema));
+    return compressed;
+  } catch {
+    return '';
+  }
+}
+
+export function decodeSchema(encoded: string): string | null {
+  try {
+    const decoded = decodeURIComponent(atob(encoded));
+    return decoded;
+  } catch {
+    return null;
+  }
 }
 
