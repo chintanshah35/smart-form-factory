@@ -17,6 +17,7 @@ import { Header } from '@/components/header';
 import { JsonEditor } from '@/components/json-editor';
 import { FormPreview } from '@/components/form-preview';
 import { CodeOutput } from '@/components/code-output';
+import { ThemeCustomizer } from '@/components/theme-customizer';
 import { useFormFactoryStore } from '@/lib/store';
 import { cn, decodeSchema } from '@/lib/utils';
 
@@ -312,6 +313,9 @@ export default function Home() {
           </p>
         </div>
       </footer>
+
+      {/* Theme Customizer */}
+      <ThemeCustomizer />
     </div>
   );
 }
