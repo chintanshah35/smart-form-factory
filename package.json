@@ -1,6 +1,6 @@
 {
   "name": "smart-form-factory",
-  "version": "1.0.0",
+  "version": "1.1.0",
   "description": "Auto-Generate Beautiful Forms from JSON Schema",
   "private": true,
   "scripts": {
