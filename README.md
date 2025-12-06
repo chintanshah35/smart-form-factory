@@ -2,7 +2,7 @@
 
 Paste a JSON schema, get a working form. Supports React Hook Form, Formik, Vue, Svelte, and plain HTML.
 
-[![Netlify Status](https://api.netlify.com/api/v1/badges/smart-form-factory/deploy-status)](https://smart-form-factory.netlify.app/)
+[![Live Demo](https://img.shields.io/badge/demo-live-brightgreen?style=flat-square)](https://smart-form-factory.netlify.app/)
 ![Next.js](https://img.shields.io/badge/Next.js-14-black?style=flat-square) ![TypeScript](https://img.shields.io/badge/TypeScript-5-blue?style=flat-square) ![Tailwind](https://img.shields.io/badge/Tailwind-3.4-38B2AC?style=flat-square) ![Version](https://img.shields.io/badge/Version-1.1.0-green?style=flat-square)
 
 ## 🚀 Live Demo
