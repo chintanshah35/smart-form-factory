@@ -9,17 +9,20 @@ import {
   Sparkles,
   Zap,
   Share2,
-  Check
+  Check,
+  Wand2
 } from 'lucide-react';
 import { useEffect, useState } from 'react';
 import { useFormFactoryStore } from '@/lib/store';
 import { encodeSchema, copyToClipboard } from '@/lib/utils';
 import { toast } from '@/components/ui/toaster';
+import { FormBuilder } from '@/components/form-builder';
 
 export function Header() {
   const { theme, setTheme } = useTheme();
   const [mounted, setMounted] = useState(false);
   const [copied, setCopied] = useState(false);
+  const [showBuilder, setShowBuilder] = useState(false);
   const { jsonInput, parsedFields } = useFormFactoryStore();
 
   useEffect(() => {
@@ -90,6 +93,18 @@ export function Header() {
           animate={{ opacity: 1, x: 0 }}
           transition={{ duration: 0.5, delay: 0.1 }}
         >
+          {/* Form Builder Button */}
+          {mounted && (
+            <button
+              onClick={() => setShowBuilder(true)}
+              className="btn-ghost rounded-lg p-2.5 text-muted-foreground hover:text-foreground"
+              aria-label="Open form builder"
+              title="Visual form builder"
+            >
+              <Wand2 className="w-5 h-5" />
+            </button>
+          )}
+
           {/* Share Button */}
           {mounted && (
             <button
@@ -150,6 +165,9 @@ export function Header() {
           )}
         </motion.div>
       </div>
+
+      {/* Form Builder Modal */}
+      <FormBuilder isOpen={showBuilder} onClose={() => setShowBuilder(false)} />
     </header>
   );
 }
