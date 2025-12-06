@@ -10,10 +10,11 @@ import {
   Check, 
   Download,
   FileCode,
-  Palette
+  Palette,
+  FileType
 } from 'lucide-react';
 import { useFormFactoryStore } from '@/lib/store';
-import { Framework, generateCSSVariables } from '@/lib/code-generator';
+import { Framework, generateCSSVariables, generateTypeScriptTypes } from '@/lib/code-generator';
 import { copyToClipboard } from '@/lib/utils';
 import { toast } from '@/components/ui/toaster';
 
@@ -25,70 +26,76 @@ const frameworkOptions: { value: Framework; label: string; icon: string }[] = [
   { value: 'html', label: 'Plain HTML', icon: '🌐' },
 ];
 
+type ViewMode = 'code' | 'css' | 'types';
+
 export function CodeOutput() {
   const { theme } = useTheme();
   const [copied, setCopied] = useState(false);
-  const [showCSS, setShowCSS] = useState(false);
+  const [viewMode, setViewMode] = useState<ViewMode>('code');
   
   const {
     generatedCode,
     selectedFramework,
     setSelectedFramework,
     parsedFields,
+    formTitle,
   } = useFormFactoryStore();
 
+  const getDisplayCode = () => {
+    switch (viewMode) {
+      case 'css':
+        return generateCSSVariables();
+      case 'types':
+        return generateTypeScriptTypes(parsedFields, formTitle);
+      default:
+        return generatedCode?.code || '';
+    }
+  };
+
+  const getFilename = () => {
+    switch (viewMode) {
+      case 'css':
+        return 'theme-variables.css';
+      case 'types':
+        return 'types.ts';
+      default:
+        return generatedCode?.filename || 'form.tsx';
+    }
+  };
+
   const handleCopy = async () => {
-    const textToCopy = showCSS ? generateCSSVariables() : generatedCode?.code || '';
-    
-    const success = await copyToClipboard(textToCopy);
+    const success = await copyToClipboard(getDisplayCode());
     if (success) {
       setCopied(true);
-      toast({
-        title: 'Copied!',
-        description: 'Code copied to clipboard',
-        variant: 'default',
-      });
+      toast({ title: 'Copied!', description: 'Code copied to clipboard' });
       setTimeout(() => setCopied(false), 2000);
     } else {
-      toast({
-        title: 'Failed to copy',
-        description: 'Please try again',
-        variant: 'destructive',
-      });
+      toast({ title: 'Failed to copy', variant: 'destructive' });
     }
   };
 
   const handleDownload = () => {
-    const code = showCSS ? generateCSSVariables() : generatedCode?.code || '';
-    const filename = showCSS ? 'theme-variables.css' : generatedCode?.filename || 'form.tsx';
-    
-    const blob = new Blob([code], { type: 'text/plain' });
+    const blob = new Blob([getDisplayCode()], { type: 'text/plain' });
     const url = URL.createObjectURL(blob);
     const a = document.createElement('a');
     a.href = url;
-    a.download = filename;
+    a.download = getFilename();
     document.body.appendChild(a);
     a.click();
     document.body.removeChild(a);
     URL.revokeObjectURL(url);
-    
-    toast({
-      title: 'Downloaded!',
-      description: `${filename} saved to downloads`,
-      variant: 'default',
-    });
+    toast({ title: 'Downloaded!', description: `${getFilename()} saved` });
   };
 
   const getLanguage = () => {
-    if (showCSS) return 'css';
+    if (viewMode === 'css') return 'css';
+    if (viewMode === 'types') return 'typescript';
     switch (generatedCode?.language) {
       case 'tsx':
       case 'jsx':
         return 'tsx';
       case 'vue':
-        return 'markup';
       case 'svelte':
-        return 'markup';
       case 'html':
         return 'markup';
       default:
@@ -96,7 +103,7 @@ export function CodeOutput() {
     }
   };
 
-  const displayCode = showCSS ? generateCSSVariables() : generatedCode?.code || '';
+  const displayCode = getDisplayCode();
 
   if (parsedFields.length === 0) {
     return (
@@ -143,11 +150,22 @@ export function CodeOutput() {
             ))}
           </select>
 
+          {/* Toggle TypeScript Types */}
+          <button
+            onClick={() => setViewMode(viewMode === 'types' ? 'code' : 'types')}
+            className={`btn-ghost p-2 rounded-lg transition-colors ${
+              viewMode === 'types' ? 'bg-secondary/20 text-secondary' : 'text-muted-foreground hover:text-foreground'
+            }`}
+            title="View TypeScript Types"
+          >
+            <FileType className="w-4 h-4" />
+          </button>
+
           {/* Toggle CSS Variables */}
           <button
-            onClick={() => setShowCSS(!showCSS)}
+            onClick={() => setViewMode(viewMode === 'css' ? 'code' : 'css')}
             className={`btn-ghost p-2 rounded-lg transition-colors ${
-              showCSS ? 'bg-accent/20 text-accent' : 'text-muted-foreground hover:text-foreground'
+              viewMode === 'css' ? 'bg-accent/20 text-accent' : 'text-muted-foreground hover:text-foreground'
             }`}
             title="View CSS Variables"
           >
@@ -199,9 +217,7 @@ export function CodeOutput() {
       <div className="px-4 py-2 border-b border-border bg-muted/30">
         <div className="flex items-center gap-2 text-sm text-muted-foreground">
           <FileCode className="w-4 h-4" />
-          <span className="font-mono">
-            {showCSS ? 'theme-variables.css' : generatedCode?.filename}
-          </span>
+          <span className="font-mono">{getFilename()}</span>
         </div>
       </div>
 

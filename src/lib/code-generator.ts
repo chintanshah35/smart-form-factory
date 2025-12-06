@@ -1394,3 +1394,49 @@ export function generateCSSVariables(): string {
 `;
 }
 
+export function generateTypeScriptTypes(fields: FormField[], formTitle: string): string {
+  const interfaceName = formTitle.replace(/\s+/g, '') + 'Data';
+  
+  const typeFields = fields.map(field => {
+    let tsType: string;
+    
+    switch (field.type) {
+      case 'number':
+      case 'range':
+        tsType = 'number';
+        break;
+      case 'checkbox':
+        tsType = 'boolean';
+        break;
+      case 'file':
+        tsType = field.multiple ? 'FileList' : 'File';
+        break;
+      case 'date':
+      case 'datetime-local':
+      case 'time':
+        tsType = 'string'; // ISO date string
+        break;
+      case 'select':
+      case 'radio':
+        if (field.options && field.options.length > 0) {
+          tsType = field.options.map(o => `'${o.value}'`).join(' | ');
+        } else {
+          tsType = 'string';
+        }
+        break;
+      default:
+        tsType = 'string';
+    }
+    
+    const optional = field.required ? '' : '?';
+    return `  ${field.name}${optional}: ${tsType};`;
+  }).join('\n');
+
+  return `export interface ${interfaceName} {
+${typeFields}
+}
+
+export type ${interfaceName}Keys = keyof ${interfaceName};
+`;
+}
+
